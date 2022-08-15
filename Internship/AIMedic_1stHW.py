@@ -143,7 +143,7 @@ class Preprocessing():
 
     return new_labels     
 
-class Regssor(Preprocessing):
+class Regressor(Preprocessing):
 
   def __init__(self, training_path, test_path, features):
     

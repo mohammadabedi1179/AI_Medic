@@ -1,4 +1,4 @@
-from AIMedic_1stHW import Regssor, Preprocessing
+from AIMedic_1stHW import Regressor, Preprocessing
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
@@ -12,7 +12,7 @@ for feature in features:
     print(dict(sorted(feature.items(), key=lambda item: item[1])))"""
 
 features = ['دسته بندی' ,'برند', 'وزن', 'ابعاد', 'مناسب برای', 'نوع اتصال', 'منبع تغذیه', 'درگاههای ارتباطی', 'ظرفیت']
-reg = Regssor('data/train.csv', 'data/test.csv', features[:4    ])
+reg = Regssor('internship/data/train.csv', 'internship/data/test.csv', features[:4    ])
 # extrcting features
 training_features, training_labels, test_features = reg.extract_arrays()
 #plotting results
