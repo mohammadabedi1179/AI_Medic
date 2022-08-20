@@ -2,13 +2,15 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Flatten, Input, Dense
 from tensorflow.keras import Model
+import pickle
+import pandas as pd
 
 
 
 class myCallback(tf.keras.callbacks.Callback):
         def on_epoch_end(self, epoch, logs={}):
             if logs.get('accuracy') is not None and logs.get('accuracy') > 0.99:
-                print("\nReached 99% accuracy on validation so cancelling training!") 
+                print("\nReached 99% accuracy so cancelling training!") 
                 self.model.stop_training = True
 
 class Train():
@@ -60,7 +62,6 @@ class Train():
     return model
   
   def training(self, input_shape : tuple = (28, 28), batch_size : int = 128):
-    
     Train.__preprocess__(self, batch_size)
     train_data = self.train_data
     validation_data = self.validation_data
@@ -71,9 +72,10 @@ class Train():
         metrics=['accuracy'])
   
     call_back = myCallback()
-    model.fit(train_data, validation_data=validation_data, epochs=50, callbacks=[call_back])
+    self.history = model.fit(train_data, validation_data=validation_data, epochs=50, callbacks=[call_back])
 
     return model
 
 if __name__ == '__main__':
-  Train('mnist').training((28, 28), 256)
+  train = Train('mnist')
+  train.training((28, 28), 256)
