@@ -1,26 +1,27 @@
-from AIMedic_1stHW import Regssor, Preprocessing
+from AIMedic_1stHW import Regressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
+import matplotlib.pyplot as plt
+models = [RandomForestRegressor(), KNeighborsRegressor(), DecisionTreeRegressor()]
+mape_main_losses = []
+mae_main_losses = []
+mse_main_losses = []
+for model in models:
+  features = ['دسته بندی' ,'برند', 'وزن', 'ابعاد', 'مناسب برای', 'نوع اتصال', 'طول کابل', 'درگاههای ارتباطی', 'رابطها', 'قابلیتهای مقاومتی']
+  reg = Regressor('Internship/1st_HW/data/train.csv', 'Internship/1st_HW/data/test.csv', features)
+  # extrcting features
+  training_features, training_labels, test_features = reg.extract_arrays()
+  predictions, mape_losses, mae_losses, mse_losses = reg.training(training_features, training_labels, test_features, model=RandomForestRegressor())
+  mape_main_losses.append(np.mean(mape_losses))
+  mae_main_losses.append(np.mean(mae_losses))
+  mse_main_losses.append(np.mean(mse_losses))
 
-"""features = ['دسته بندی' ,'برند', 'وزن', 'کارکرد', 'سری پردازنده']
-prep = Preprocessing('data/train.csv', 'data/test.csv')
-features = prep.count_features()
-for feature in features:
-    print(dict(sorted(feature.items(), key=lambda item: item[1])))"""
-
-features = ['دسته بندی' ,'برند', 'وزن', 'ابعاد', 'مناسب برای', 'نوع اتصال', 'منبع تغذیه', 'درگاههای ارتباطی', 'ظرفیت']
-reg = Regssor('data/train.csv', 'data/test.csv', features[:4])
-# extrcting features
-training_features, training_labels, test_features = reg.extract_arrays()
-#plotting results
-font = {'family': 'Arial',
-        'weight': 'normal',
-        'size': 8,
-        }
-
-reg.plot_results(training_features, training_labels, font_dict=font)
-predictions, losses = reg.training(training_features, training_labels, test_features, model=DecisionTreeRegressor())
-print(np.mean(losses))
+fig = plt.figure(figsize=(10, 10))
+plt.plot(['Ramdom Forest', 'KNN', 'Decision Tree'], np.log(mape_main_losses), label='MAPE')
+plt.plot(['Ramdom Forest', 'KNN', 'Decision Tree'], np.log(mse_main_losses), label='MSE')
+plt.plot(['Ramdom Forest', 'KNN', 'Decision Tree'], np.log(mae_main_losses), label='MAE')
+plt.ylabel('Loss')
+plt.xlabel('Model')
+plt.show()

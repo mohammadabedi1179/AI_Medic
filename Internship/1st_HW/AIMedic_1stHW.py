@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_log_error, mean_absolute_percentage_error
+from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, mean_absolute_error
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from bidi.algorithm import get_display
@@ -52,7 +52,7 @@ class Preprocessing():
         
         for feature in product.keys():
           if feature not in features[c]:
-            features[c][feature] = 0
+            features[c][feature] = 1
           else:
             features[c][feature] += 1
         
@@ -117,8 +117,8 @@ class Preprocessing():
   def label_encoder(self, labels, train=True):
     if train:
 
-      labels_dict = {}
-      key = 0
+      labels_dict = {'نامعلوم' : 0}
+      key = 1
       new_labels = []
 
       for label in labels:
@@ -143,7 +143,7 @@ class Preprocessing():
 
     return new_labels     
 
-class Regssor(Preprocessing):
+class Regressor(Preprocessing):
 
   def __init__(self, training_path, test_path, features):
     
@@ -170,7 +170,7 @@ class Regssor(Preprocessing):
     font = font_dict
     features = self.features
     number_of_features = len(features)
-    plt.figure(figsize=(80, 80))
+    fig = plt.figure(figsize=(40, 40))
     
     for i in range(number_of_features):
         plt.subplot(int(np.ceil(np.sqrt(number_of_features))), int(np.ceil(np.sqrt(number_of_features))), i + 1)
@@ -179,14 +179,16 @@ class Regssor(Preprocessing):
         persian_labels = [ get_display(reshape(persian_label)) for persian_label in persian_labels]
         plt.title(persian_labels[0], fontdict=font)
         plt.ylabel(persian_labels[1], fontdict=font)
-        #plt.xlabel(persian_labels[2], fontdict=font)
-        plt.xticks([0, max(features_array[:, i])])
+        plt.xticks([0, max(features_array[:, i])], )
     
     plt.show()
+    fig.savefig('/content/out1.png', format='png')
 
   def training(self, training_features, training_labels, test_features, model=LinearRegression(), num_of_cv_split=5, shuffle=True, output=True):
     kf = KFold(n_splits=num_of_cv_split, shuffle=shuffle)
-    losses = []
+    mape_losses = []
+    mae_losses = []
+    mse_losses = []
     predictions = []
 
     for train_indices, valid_indices in kf.split(training_features):
@@ -197,13 +199,17 @@ class Regssor(Preprocessing):
         predictions.append(clf.predict(test_features).reshape(-1))
         valid_predictions = clf.predict(valid_features).reshape(-1)
         loss = mean_absolute_percentage_error(valid_labels, valid_predictions)
-        losses.append(loss)
+        mape_losses.append(loss)
+        loss = mean_absolute_error(valid_labels, valid_predictions)
+        mae_losses.append(loss)
+        loss = mean_squared_error(valid_labels, valid_predictions)
+        mse_losses.append(loss)
         prediction = np.mean(predictions, axis=0)
 
         if output:
           id = np.arange(test_features.shape[0]).reshape(-1)
           output = {'id' : id, 'price' : prediction}
           output = pd.DataFrame.from_dict(output) 
-          output.to_csv(r'Test.csv', index=False, header=True)
+          output.to_csv(r'/content/Test.csv', index=False, header=True)
         
-        return prediction, losses
+        return prediction, mape_losses, mae_losses, mse_losses
