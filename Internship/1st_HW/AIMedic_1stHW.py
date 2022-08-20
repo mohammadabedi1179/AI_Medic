@@ -178,7 +178,7 @@ class Regressor(Preprocessing):
         plt.xticks([0, max(features_array[:, i])], )
     
     plt.show()
-    fig.savefig('out.png', format='png')
+    fig.savefig('Internship/1st_HW/out.png', format='png')
 
   def training(self, training_features, training_labels, test_features, model=LinearRegression(), num_of_cv_split=5, shuffle=True, output=True):
     kf = KFold(n_splits=num_of_cv_split, shuffle=shuffle)
@@ -206,6 +206,6 @@ class Regressor(Preprocessing):
           id = np.arange(test_features.shape[0]).reshape(-1)
           output = {'id' : id, 'price' : prediction}
           output = pd.DataFrame.from_dict(output) 
-          output.to_csv(r'Test.csv', index=False, header=True)
+          output.to_csv(r'Internship/1st_HW/Test.csv', index=False, header=True)
         
         return prediction, mape_losses, mae_losses, mse_losses
