@@ -17,7 +17,6 @@ class Train():
 
     """ load specific dataset from tensorflow_datasets"""
     self.train_data, self.validation_data = tfds.load(dataset, split=['train', 'test'], as_supervised=True, shuffle_files=True)
-    Train.__preprocess__(self)
 
   def __normalize__(image, label):
     """ 
@@ -61,10 +60,11 @@ class Train():
     return model
   
   def training(self, input_shape : tuple = (28, 28), batch_size : int = 128):
-
+    
+    Train.__preprocess__(self, batch_size)
     train_data = self.train_data
     validation_data = self.validation_data
-    model = Train.__create_model__()
+    model = Train.__create_model__(input_shape)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(),
@@ -72,3 +72,8 @@ class Train():
   
     call_back = myCallback()
     model.fit(train_data, validation_data=validation_data, epochs=50, callbacks=[call_back])
+
+    return model
+
+if __name__ == '__main__':
+  Train('mnist').training((28, 28), 256)
