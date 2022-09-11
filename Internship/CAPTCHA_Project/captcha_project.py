@@ -90,43 +90,56 @@ class NN():
     new_labels = tf.convert_to_tensor(new_labels, dtype=tf.float64)
     return new_labels
 
-  def load_data(self,path: str, batch_size: int, train_split_rate: float, val_split_rate: float):
+  def load_data(self, path: str, batch_size: int, train_split_rate: float, val_split_rate: float, load=False):
     """
     path: directory contains of images
     batch_size : number of data on each batches
     train_split_rate: fraction of training data
     val_split_rate: farction of validation data
+    laod: load datset if model is pretrained
     """
-    dir_list = os.listdir(path)                                   #list of all file within directory                                    
-    labels = []                                                   #list of labels
-    data = []                                                     #list of images data
-    dataset_size = 0
+    if load:
+      test_dataset = tf.data.experimental.load("datasets/test_dataset")
+      val_dataset = tf.data.experimental.load("datasets/valid_dataset")
+      train_dataset = tf.data.experimental.load("datasets/train_dataset")
 
-    for image_path in dir_list:
-      image_label = image_path[:-4]                               #label of each image has already written as image name wihtout .png part
-      labels.append(image_label)
-      im_path = os.path.join(path, image_path)
-      image_data = self.__load_image(im_path)                   #encode image file
-      data.append(image_data)
-      dataset_size += 1
+    else:
+      dir_list = os.listdir(path)                                   #list of all file within directory                                    
+      labels = []                                                   #list of labels
+      data = []                                                     #list of images data
+      dataset_size = 0
 
-    labels = self.__encode_label(labels)                        #encode labels
-    data = tf.convert_to_tensor(data)
-    dataset = tf.data.Dataset.from_tensor_slices((data, labels))  #create dataset from list of labels and images
-    dataset = dataset.shuffle(100)                                #shuffle dataset
+      for image_path in dir_list:
+        image_label = image_path[:-4]                               #label of each image has already written as image name wihtout .png part
+        labels.append(image_label)
+        im_path = os.path.join(path, image_path)
+        image_data = self.__load_image(im_path)                   #encode image file
+        data.append(image_data)
+        dataset_size += 1
 
-    train_size = int(train_split_rate*dataset_size)               
-    val_size = int(val_split_rate*dataset_size)
-    test_size = dataset_size - (train_size + val_size)
+      labels = self.__encode_label(labels)                        #encode labels
+      data = tf.convert_to_tensor(data)
+      dataset = tf.data.Dataset.from_tensor_slices((data, labels))  #create dataset from list of labels and images
+      dataset = dataset.shuffle(100)                                #shuffle dataset
+
+      train_size = int(train_split_rate*dataset_size)               
+      val_size = int(val_split_rate*dataset_size)
+      test_size = dataset_size - (train_size + val_size)
+      
+      train_dataset = dataset.take(train_size)
+      val_test_dataset = dataset.skip(train_size)
+      val_dataset = val_test_dataset.take(val_size)
+      test_dataset = val_test_dataset.skip(val_size)
     
-    train_dataset = dataset.take(train_size)
-    val_test_dataset = dataset.skip(train_size)
-    val_dataset = val_test_dataset.take(val_size)
-    test_dataset = val_test_dataset.skip(val_size)
-  
-    train_dataset = train_dataset.batch(batch_size)               #batch datasets
-    val_dataset = val_dataset.batch(batch_size)
-    test_dataset = test_dataset.batch(batch_size)
+      train_dataset = train_dataset.batch(batch_size)               #batch datasets
+      val_dataset = val_dataset.batch(batch_size)
+      test_dataset = test_dataset.batch(batch_size)
+      tf.data.experimental.save(train_dataset, "/home/mohammadabedi/Documents/AI_Medic/Internship/CAPTCHA_Project/datasets/train_dataset")
+      tf.data.experimental.save(val_dataset, "/home/mohammadabedi/Documents/AI_Medic/Internship/CAPTCHA_Project/datasets/valid_dataset")
+      tf.data.experimental.save(test_dataset, "/home/mohammadabedi/Documents/AI_Medic/Internship/CAPTCHA_Project/datasets/test_dataset")
+      with open('labels_dicts.pickle', 'wb') as handle:
+        pickle.dump(self.labels_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     return train_dataset, val_dataset, test_dataset
   
   def load_model(self):
@@ -160,7 +173,7 @@ class NN():
     output = []                                                                                         #list of outputs
     for i in range(5):
       x = tf.keras.layers.Dense(40, activation='relu', name=f'1st_fully_connected_of_{i}')(flat)
-      x = tf.keras.layers.Dropout(0.3)(x)
+      x = tf.keras.layers.Dropout(0.2)(x)
       #x = tf.keras.layers.Dense(64, activation='relu', name=f'2nd_fully_connected_of_{i}')(flat)
       #x = tf.keras.layers.Dropout(0.2)(x)
       x = tf.keras.layers.Dense(36, activation='softmax', name=f'output_{i}')(x)
@@ -169,10 +182,10 @@ class NN():
     output = tf.transpose(output, perm=[1, 2, 0])                                                       #transpose to batch first and channels last
     model = tf.keras.Model(inputs=images, outputs=output)                                               #create model by defining inputs and outputs
     self.summary = model.summary()                                                                      #summary of model helps us debugging better 
-    self.call_back = tf.keras.callbacks.ModelCheckpoint("/content/drive/MyDrive/AIMedic/Internship/saved model/new", monitor='val___custom_accuracy', save_best_only=True, mode='max')   #save most accurate model on validation data in the following path
+    self.call_back = tf.keras.callbacks.ModelCheckpoint("saved_model/new", monitor='val___custom_accuracy', save_best_only=True, mode='max')   #save most accurate model on validation data in the following path
     model.compile(
         loss=Custom_Loss(),                                                                             #compile model as predifined class Custom Loss as loss function
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),                                        #Adam as optimizer with static learning rate (0.001)
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),                                        #Adam as optimizer with static learning rate (0.001)
         metrics=[self.__custom_accuracy]                                                                #and custom accuracy as accuracy
     )
     return model
@@ -227,12 +240,13 @@ class Results():
     plt.ylabel('Cross Entropy Loss')
     plt.title('Training and Validation Loss')
     plt.show()
-  def test(self, test_dataset : tf.data.Dataset):
+  def test(self, test_dataset : tf.data.Dataset, words_dict : dict):
     """
     test_dataset : test dataset of data
+    words_dict : dictionary of words in the dataset
     """
     model = self.model
-    for images, labels in test.take(1):                          #take one batch of test dataset to predict
+    for images, labels in test_dataset.take(1):                          #take one batch of test dataset to predict
       fig = plt.figure(figsize=(20, 20))
       preds = model.predict(images)                              #predict images
       preds = np.argmax(preds, axis=1)                           #determine wich class to belonged
@@ -247,7 +261,7 @@ class Results():
         img = tf.squeeze(image)                                  #convert 3d tensor to 2d because matplotlib accepts 2nd array for gray scale images
         plt.imshow(img, cmap='gray')                             #show image used for prediction
         plt.title(preds_str[i])                                  #show predicted phrase as image title
-      plt.show(fig)
+      plt.show()
 class History:
   def __init__(self, history):
     self.history = history
