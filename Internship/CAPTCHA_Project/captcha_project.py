@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import keras.backend as kb
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
 import pickle
-from google.colab import files
 from tensorflow import math
 
 """# Custom loss

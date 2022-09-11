@@ -4,11 +4,11 @@ import pickle
 import keras
 if __name__=="__main__":
   net = NN()
-  training, validation, test = net.load_data("AI_Medic/Internship/CAPTCHA_project/data", 32, 0.75, 0.15)
+  training, validation, test = net.load_data("data", 32, 0.75, 0.15)
   labels_dict = net.labels_dict
   words_dict = dict((v, k) for k, v in labels_dict.items())
-  model = keras.models.load_model('AI_Medic/Internship/CAPTCHA_project/saved model/new', compile=False)
-  with open('/content/Final_history.pkl', 'rb') as f:
+  model = keras.models.load_model('saved model/new', compile=False)
+  with open('Final_history.pkl', 'rb') as f:
         new_history = pickle.load(f)
         history = History(new_history)
   command = ''
